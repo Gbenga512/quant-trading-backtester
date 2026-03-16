@@ -1,22 +1,26 @@
-import pandas as pd
-import numpy as np
-import yfinance as yf
+# Quant Trading Backtester
 
-# Download stock data
-data = yf.download("AAPL", start="2020-01-01", end="2024-01-01")
+Python backtesting engine for testing algorithmic trading strategies.
 
-# Calculate moving averages
-data["MA50"] = data["Close"].rolling(50).mean()
-data["MA200"] = data["Close"].rolling(200).mean()
+## Strategy Example
 
-# Generate signals
-data["Signal"] = np.where(data["MA50"] > data["MA200"], 1, 0)
+Moving Average Crossover Strategy
 
-# Strategy returns
-data["Returns"] = data["Close"].pct_change()
-data["Strategy"] = data["Returns"] * data["Signal"].shift(1)
+Buy signal:
+50-day moving average crosses above 200-day moving average.
 
-# Performance
-cumulative = (1 + data["Strategy"]).cumprod()
+Sell signal:
+50-day moving average crosses below 200-day moving average.
 
-print("Final Return:", cumulative.iloc[-1])
+## Features
+
+• Historical data from Yahoo Finance  
+• Strategy signal generation  
+• Portfolio return calculation  
+• Cumulative performance evaluation
+
+## Future Improvements
+
+• Sharpe ratio calculation  
+• Maximum drawdown analysis  
+• Multiple asset portfolios
