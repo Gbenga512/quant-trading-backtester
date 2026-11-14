@@ -16,6 +16,7 @@ class Settings:
     max_spread_points: int = 25
     min_adx: float = 18.0
     min_reward_risk: float = 1.5
+    ai_min_probability: float = 0.55
     atr_stop_multiple: float = 1.8
     atr_target_multiple: float = 2.7
     fast_ema: int = 20
