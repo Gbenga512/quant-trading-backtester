@@ -14,7 +14,6 @@ class MT5Adapter:
         account = mt5.account_info()
         if account is None:
             raise RuntimeError(f"MT5 account unavailable: {mt5.last_error()}")
-        # Do not assume a broker demo account is safe; enforce MT5 demo flag.
         if getattr(account, "trade_mode", None) != mt5.ACCOUNT_TRADE_MODE_DEMO:
             mt5.shutdown()
             raise RuntimeError("Safety lock: ProBot AI only connects to MT5 DEMO accounts.")
@@ -44,6 +43,15 @@ class MT5Adapter:
             raise RuntimeError(f"Symbol unavailable: {symbol}")
         return tick, info
 
+    def _filling_mode(self, info):
+        mt5 = self.mt5
+        modes = info.filling_mode
+        if modes & mt5.SYMBOL_FILLING_FOK:
+            return mt5.ORDER_FILLING_FOK
+        if modes & mt5.SYMBOL_FILLING_IOC:
+            return mt5.ORDER_FILLING_IOC
+        return mt5.ORDER_FILLING_RETURN
+
     def send_market_order(self, signal, volume):
         if not self.cfg.demo_only or not self.cfg.allow_order_submission:
             raise RuntimeError("Order submission is disabled. Explicit demo test configuration required.")
@@ -56,7 +64,7 @@ class MT5Adapter:
             "price": price, "sl": signal.stop_loss, "tp": signal.take_profit,
             "deviation": 20, "magic": self.cfg.magic_number,
             "comment": "ProBotAI-demo", "type_time": mt5.ORDER_TIME_GTC,
-            "type_filling": info.filling_mode,
+            "type_filling": self._filling_mode(info),
         }
         check = mt5.order_check(request)
         if check is None or check.retcode != 0:
