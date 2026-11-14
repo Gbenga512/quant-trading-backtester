@@ -1,5 +1,5 @@
 """Simple bar-based research harness. Not an execution simulator.
-For reliable research, include spread, commission, swaps and slippage in the input data/model.
+Spread, commission, swaps and slippage are not modelled in this preliminary version.
 """
 import pandas as pd
 from .indicators import add_indicators
@@ -7,6 +7,8 @@ from .strategy import TrendMomentumStrategy
 
 def run_backtest(frame, symbol, cfg, initial_balance=10000.0, pip_size=0.0001,
                  pip_value_per_lot=10.0, risk_fraction=None):
+    if pip_size <= 0 or pip_value_per_lot <= 0:
+        raise ValueError("pip_size and pip_value_per_lot must be positive")
     df = add_indicators(frame, cfg).reset_index(drop=True)
     strategy = TrendMomentumStrategy(cfg)
     balance, peak, max_dd = float(initial_balance), float(initial_balance), 0.0
@@ -20,12 +22,16 @@ def run_backtest(frame, symbol, cfg, initial_balance=10000.0, pip_size=0.0001,
             continue
         entry_i = i+1
         entry = float(df.iloc[entry_i].open)
-        stop = signal.stop_loss
-        target = signal.take_profit
-        risk_pips = abs(entry-stop)/pip_size
-        if risk_pips <= 0:
+        stop_distance = abs(signal.entry-signal.stop_loss)
+        target_distance = abs(signal.take_profit-signal.entry)
+        if stop_distance <= 0 or target_distance <= 0:
             i += 1
             continue
+        if signal.side == "BUY":
+            stop, target = entry-stop_distance, entry+target_distance
+        else:
+            stop, target = entry+stop_distance, entry-target_distance
+        risk_pips = stop_distance/pip_size
         lots = balance*risk_fraction/(risk_pips*pip_value_per_lot)
         outcome, exit_price, exit_i = "OPEN", None, entry_i
         for j in range(entry_i, len(df)):
@@ -34,15 +40,16 @@ def run_backtest(frame, symbol, cfg, initial_balance=10000.0, pip_size=0.0001,
                 hit_sl, hit_tp = bar.low <= stop, bar.high >= target
             else:
                 hit_sl, hit_tp = bar.high >= stop, bar.low <= target
-            if hit_sl:  # conservative: stop wins if both touched in same candle
+            if hit_sl:  # conservative: stop wins if both touched in the same bar
                 outcome, exit_price, exit_i = "LOSS", stop, j
                 break
             if hit_tp:
                 outcome, exit_price, exit_i = "WIN", target, j
                 break
         if exit_price is None:
-            i += 1
-            continue
+            exit_i = len(df)-1
+            exit_price = float(df.iloc[exit_i].close)
+            outcome = "END_OF_DATA"
         pnl_pips = (exit_price-entry)/pip_size * (1 if signal.side=="BUY" else -1)
         pnl = pnl_pips*pip_value_per_lot*lots
         balance += pnl
