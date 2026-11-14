@@ -21,7 +21,7 @@ py -m venv .venv
 .venv\\Scripts\\activate
 pip install -r requirements.txt
 python -m pytest
-python run.py --observe
+python run.py  # observe-only; no orders are sent
 ```
 
 ## Dashboard
@@ -49,7 +49,7 @@ An optional Random Forest movement classifier can be trained from indicator-enri
 3. Persist daily risk baselines and kill-switch state across restarts.
 4. Add spread/commission-aware tick backtesting and walk-forward evaluation.
 5. Verify position reconciliation and duplicate-order prevention.
-6. Enable order submission only after reviewing the complete test report. Live trading remains out of scope.
+6. Only after those safeguards are implemented and tested, run `python run.py --demo-orders` on a DEMO account. Live trading remains out of scope.
 
 ## Components
 `config`, `indicators`, `strategy`, `risk`, `mt5_adapter`, `engine`, `storage`, `backtest`, `ai_filter`, and `dashboard`.
