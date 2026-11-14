@@ -3,7 +3,7 @@ on:
   push:
     branches: [probot-ai-integrated-build]
   pull_request:
-    branches: [probot-ai-integrated-build]
+    branches: [main]
 jobs:
   tests:
     runs-on: ubuntu-latest
